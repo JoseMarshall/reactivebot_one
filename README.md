@@ -1,7 +1,65 @@
-## Robot Package Template
+# Reactive Robot (⚡ 🤖)
 
-This is a GitHub template. You can make your own copy by clicking the green "Use this template" button.
+## Mission
 
-It is recommended that you keep the repo/package name the same, but if you do change it, ensure you do a "Find all" using your IDE (or the built-in GitHub IDE by hitting the `.` key) and rename all instances of `reactivebot_one` to whatever your project's name is.
+The goal of this project is to create a reactive robot that can navigate in a world where there is a question mark shaped wall. The robot should be able to navigate from the start point (rounded area) till the "bottom" of question mark wall, following without hitting it.
 
-Note that each directory currently has at least one file in it to ensure that git tracks the files (and, consequently, that a fresh clone has direcctories present for CMake to find). These example files can be removed if required (and the directories can be removed if `CMakeLists.txt` is adjusted accordingly).
+   .-''''-..     
+ .' .'''.   `.   
+/    \   \    `. 
+\    ' O |     | 
+ `--'   /     /  
+      .'  ,-''   
+      |  /       
+      | '        
+      '-'         
+       X -> End point
+       
+## Project Structure
+
+
+## Installation and Build
+
+This project use the version 2 of ROS (Robot Operating System) and the Gazebo simulator. To install ROS 2, follow the instructions on the [ROS 2 Installation Guide](https://docs.ros.org/en/foxy/Installation.html).
+
+Beside ROS 2, We will need some other packages:
+
+```bash
+    $ sudo apt install ros-foxy-joint-state-publisher ros-foxy-joint-state-publisher-gui row-foxy-xacro gazebo_ros twis_mux
+```
+
+Create a workspace and clone the project:
+
+```bash
+    $ mkdir -p ~/ros2_ws/src
+    $ cd ~/ros2_ws/src
+    $ git clone https://github.com/JoseMarshall/reactivebot_one.git
+```
+
+Build the project:
+
+```bash
+    $ cd ~/ros2_ws
+    $ colcon build --symlink-install
+```
+
+## Usage
+
+After creating the workspace (on the example we are considering that the workspace name is ros2_ws) and building the project, change the directory to the workspace and source the setup file:
+
+```bash
+    $ cd ~/ros2_ws
+    $ source install/local_setup.bash
+```
+
+Run the following command to start the robot on the simulation world:
+
+```bash
+    $ ros2 launch reactive_robot launch_sim.launch.py
+```
+
+If you want to run the robot without the simulation, run the following command:
+
+```bash
+    $ ros2 launch reactive_robot rsp.launch.py
+```
