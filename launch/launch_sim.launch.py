@@ -4,8 +4,10 @@ from ament_index_python.packages import get_package_share_directory
 
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.conditions import IfCondition
 
 from launch_ros.actions import Node
 import xacro
@@ -16,14 +18,54 @@ def generate_launch_description():
     # !!! MAKE SURE YOU SET THE PACKAGE NAME CORRECTLY !!!
     # Specify the name of the package and path to xacro file within the package
     pkg_name = 'reactivebot_one'
+    # Set the path to the world file
+    world_file_name = 'question_mark_wall.world'
 
     pkg_path = os.path.join(get_package_share_directory(pkg_name))
+    world_path = os.path.join(pkg_path, 'worlds', world_file_name)
     xacro_file = os.path.join(pkg_path,'description','robot.urdf.xacro')
 
     robot_description_raw = xacro.process_file(xacro_file).toxml()
 
+    headless = LaunchConfiguration('headless')
+    use_sim_time = LaunchConfiguration('use_sim_time')
+    use_simulator = LaunchConfiguration('use_simulator')
+    world = LaunchConfiguration('world')
 
-    # Configure the node
+    declare_simulator_cmd = DeclareLaunchArgument(
+        name='headless',
+        default_value='False',
+        description='Whether to execute gzclient'
+    )
+     
+    declare_use_sim_time_cmd = DeclareLaunchArgument(
+        name='use_sim_time',
+        default_value='true',
+        description='Use simulation (Gazebo) clock if true'
+    )
+    
+    declare_use_simulator_cmd = DeclareLaunchArgument(
+        name='use_simulator',
+        default_value='True',
+        description='Whether to start the simulator'
+    )
+    
+    declare_world_cmd = DeclareLaunchArgument(
+        name='world',
+        default_value=world_path,
+        description='Full path to the world model file to load'
+    )
+
+    # Specify the actions
+    # Start Gazebo server
+    gazebo = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    get_package_share_directory('gazebo_ros'), 'launch'), '/gazebo.launch.py']),
+                condition=IfCondition(PythonExpression([use_simulator, ' and not ', headless])),
+                launch_arguments={'world': world}.items()
+            )
+    
+     # Configure the node
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -32,10 +74,6 @@ def generate_launch_description():
         'use_sim_time': True}] # add other parameters here if required
     )
 
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(
-            get_package_share_directory('gazebo_ros'), 'launch'), '/gazebo.launch.py']),
-        )
 
     spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
                     arguments=['-topic', 'robot_description',
@@ -48,10 +86,19 @@ def generate_launch_description():
         output='screen',
     )
 
-    # Run the node
-    return LaunchDescription([
-        gazebo,
-        node_robot_state_publisher,
-        node_joint_state_publisher_gui,
-        spawn_entity,
-    ])
+    # Create the launch description and populate
+    launchDescription = LaunchDescription()
+    
+    # Declare the launch options
+    launchDescription.add_action(declare_simulator_cmd)
+    launchDescription.add_action(declare_use_sim_time_cmd)
+    launchDescription.add_action(declare_use_simulator_cmd)
+    launchDescription.add_action(declare_world_cmd)
+    
+    # Add any actions
+    launchDescription.add_action(spawn_entity)
+    launchDescription.add_action(node_robot_state_publisher)
+    launchDescription.add_action(gazebo)
+    launchDescription.add_action(node_joint_state_publisher_gui)
+    
+    return launchDescription
