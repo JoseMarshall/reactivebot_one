@@ -4,17 +4,25 @@
 
 The goal of this project is to create a reactive robot that can navigate in a world where there is a question mark shaped wall. The robot should be able to navigate from the start point (rounded area) till the "bottom" of question mark wall, following without hitting it.
 
-   .-''''-..     
- .' .'''.   `.   
-/    \   \    `. 
-\    ' O |     | 
- `--'   /     /  
-      .'  ,-''   
-      |  /       
-      | '        
-      '-'         
-       X -> End point
-       
+```
+
+      ???????     
+    ??:::::::??   
+  ??:::::::::::?  
+ ?:::::????:::::? 
+ ?::::?    ?::::? 
+ ?::::?  O  ?::::?
+ ??????     ?::::?
+           ?::::? 
+          ?::::?  
+         ?::::?   
+        ?::::?    
+       ?::::?     
+       ?::::?     
+       ??::??     
+        ????      
+         X -> End point
+```
 ## Project Structure
 
 
