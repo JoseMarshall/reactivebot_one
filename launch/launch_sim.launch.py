@@ -79,12 +79,6 @@ def generate_launch_description():
                     arguments=['-topic', 'robot_description',
                                 '-entity', 'my_bot'],
                     output='screen')
-    
-    node_joint_state_publisher_gui = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        output='screen',
-    )
 
     # Create the launch description and populate
     launchDescription = LaunchDescription()
@@ -99,6 +93,5 @@ def generate_launch_description():
     launchDescription.add_action(spawn_entity)
     launchDescription.add_action(node_robot_state_publisher)
     launchDescription.add_action(gazebo)
-    launchDescription.add_action(node_joint_state_publisher_gui)
     
     return launchDescription
