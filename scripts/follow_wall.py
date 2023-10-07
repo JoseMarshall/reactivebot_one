@@ -10,16 +10,18 @@ regions = {
     'fleft': 0,
     'left': 0,
 }
+
+over_distance = 10
 class WallFollowerNode(Node):
     def __init__(self):
         super().__init__('wall_follower')
 
         self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.sub = self.create_subscription(LaserScan, 'lidar_scan', self.scan_callback, 10)
-        self.wall_distance = 0.16  # Desired distance from the wall
-        self.error_distance = 0.04    # Error distance
-        self.linear_speed = 0.1   # Linear speed
-        self.angular_speed = 0.5   # Angular speed
+        self.wall_distance = 0.15  # Desired distance from the wall
+        self.error_distance = 0.03    # Error distance
+        self.linear_speed = 0.08   # Linear speed
+        self.angular_speed = 0.2   # Angular speed
 
     def find_wall_on_left(self):
         twist_msg = Twist()
@@ -91,11 +93,15 @@ class WallFollowerNode(Node):
     
     def take_action(self):
         global regions
+        global over_distance
+        #If the robot is pointed to the wall
+        if regions['front'] < over_distance and regions['right'] == over_distance and regions['left'] == over_distance:
+            return self.go_straight_ahead()
 
         # If the robot is too far from the wall
-        if self.is_too_far_from_the_wall():
+        elif self.is_too_far_from_the_wall():
             # If left side is closer to the wall than the right side
-            if ((regions['fleft'] < regions['fright']) or (regions['left'] < regions['right'])) and (regions['right'] < 10):
+            if ((regions['fleft'] < regions['fright']) or (regions['left'] < regions['right'])) and (regions['right'] < over_distance):
                 return self.find_wall_on_left()
             else:
                 return self.find_wall_on_right()
@@ -125,12 +131,13 @@ class WallFollowerNode(Node):
 
     def scan_callback(self, msg):
         global regions
+        global over_distance
         regions = {
-            'right':  min(min(msg.ranges[0:35]), 10),
-            'fright': min(min(msg.ranges[36:71]), 10),
-            'front':  min(min(msg.ranges[72:107]), 10),
-            'fleft':  min(min(msg.ranges[108:143]), 10),
-            'left':   min(min(msg.ranges[144:179]), 10),
+            'right':  min(min(msg.ranges[0:35]), over_distance),
+            'fright': min(min(msg.ranges[36:71]), over_distance),
+            'front':  min(min(msg.ranges[72:107]), over_distance),
+            'fleft':  min(min(msg.ranges[108:143]), over_distance),
+            'left':   min(min(msg.ranges[144:179]), over_distance),
         }
     
        
