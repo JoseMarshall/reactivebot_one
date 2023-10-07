@@ -11,7 +11,18 @@ from launch.conditions import IfCondition
 
 from launch_ros.actions import Node
 import xacro
+import random
+import math
 
+def generate_random_pose():
+    # Generate random x, y, z coordinates within a specific range
+    x = random.uniform(-0.15, 0.2)  # Adjust the range as needed
+    y = random.uniform(-0.15, 0.2)  # Adjust the range as needed
+    z = 0.0
+    # Generate a random yaw angle (rotation around the z-axis) in radians
+    yaw = random.uniform(0, math.pi)
+
+    return x, y, z, yaw
 
 def generate_launch_description():
     # Include the robot_state_publisher launch file, provided by our own package. Force sim time to be enabled
@@ -66,6 +77,7 @@ def generate_launch_description():
             )
     
      # Configure the node
+    
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -74,10 +86,11 @@ def generate_launch_description():
         'use_sim_time': True}] # add other parameters here if required
     )
 
+    x, y, z, yaw = generate_random_pose()
 
     spawn_entity = Node(package='gazebo_ros', executable='spawn_entity.py',
-                    arguments=['-topic', 'robot_description',
-                                '-entity', 'my_bot'],
+                    arguments=['-topic', 'robot_description', 
+                                '-entity', 'my_bot', '-x', {str(x)}, '-y', {str(y)}, '-z', {str(z)}, '-Y', {str(yaw)}],
                     output='screen')
 
     # Create the launch description and populate
