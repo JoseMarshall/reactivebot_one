@@ -59,13 +59,13 @@ class WallFollowerNode(Node):
 
     def turn_left(self):
         twist_msg = Twist()
-        twist_msg.angular.z = self.angular_speed * 2
+        twist_msg.angular.z = self.angular_speed
         print("turn_left")
         return twist_msg
 
     def turn_right(self):
         twist_msg = Twist()
-        twist_msg.angular.z = -self.angular_speed * 2
+        twist_msg.angular.z = -self.angular_speed
         print("turn_right")
         return twist_msg
 
