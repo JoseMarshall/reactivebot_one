@@ -66,6 +66,12 @@ Run the following command to start the robot on the simulation world:
     $ ros2 launch reactive_robot launch_sim.launch.py
 ```
 
+To start moving the robot and make it follow the wall, run the script:
+
+```bash
+    $ python3 scripts/follow_wall.py
+```
+
 If you want to run the robot without the simulation, run the following command:
 
 ```bash
