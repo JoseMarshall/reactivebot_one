@@ -86,11 +86,11 @@ class WallFollowerNode(Node):
         print("go_straight_ahead")
         return twist_msg
      
-    def park(self):
+    def stop(self):
         twist_msg = Twist()
         twist_msg.linear.x = 0.0
         twist_msg.linear.z = 0.0
-        print("park")
+        print("stop")
         return twist_msg
 
     def is_too_far_from_the_wall(self):
@@ -105,7 +105,7 @@ class WallFollowerNode(Node):
         # if all the regions are smaller than the desired distance from the wall
         # We consider only the front, front-right and right regions
         # cause this is the region that the robot will use to follow the wall
-        return (regions['front'] <= self.wall_distance - self.error_distance) and (regions['fright'] <= self.wall_distance - self.error_distance) and (regions['right'] <= self.wall_distance - self.error_distance)
+        return (regions['front'] <= self.wall_distance - self.error_distance) or (regions['fright'] <= self.wall_distance - self.error_distance) or (regions['right'] <= self.wall_distance - self.error_distance)
     
     def take_action(self):
         global regions
@@ -158,12 +158,9 @@ class WallFollowerNode(Node):
             'left':   min(min(msg.ranges[144:179]), over_distance),
         }
     
-       
-        # print(regions)
-
-        if not on_stop_region:
-            twist_msg = self.take_action()
-            self.pub.publish(twist_msg)
+        # If robot is on stop region, stop/park it, otherwise take action (keep moving)
+        twist_msg = self.stop() if on_stop_region else self.take_action()
+        self.pub.publish(twist_msg)
 
     def timer_callback(self):
         return
@@ -175,11 +172,6 @@ class WallFollowerNode(Node):
         x = msg.pose.pose.position.x
         y = msg.pose.pose.position.y
         on_stop_region = x >=stop_region['limInfX'] and x <=stop_region['limSupX'] and y >=stop_region['limInfY'] and y <=stop_region['limSupY']
-
-        # If robot is on stop region, break/park it
-        if on_stop_region:
-            twist_msg = self.park()
-            self.pub.publish(twist_msg)
 
         # print('Robot position: x={}, y={}'.format(x, y))
 
