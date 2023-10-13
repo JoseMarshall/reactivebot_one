@@ -89,6 +89,7 @@ class WallFollowerNode(Node):
     def stop(self):
         twist_msg = Twist()
         twist_msg.linear.x = 0.0
+        twist_msg.linear.y = 0.0
         twist_msg.linear.z = 0.0
         print("stop")
         return twist_msg
