@@ -4,24 +4,21 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 
+# Sensor Regions
 regions = {
+    'bbright': 0,
+    'bright': 0,
     'right': 0,
     'fright': 0,
     'front': 0,
+    'back': 0,
     'fleft': 0,
     'left': 0,
+    'bleft': 0,    
+    'bbleft': 0,   
 }
 
 over_distance = 10
-
-stop_region = {
-    'limInfX': -0.025,
-    'limSupX': 0.065,
-    'limInfY': -2,
-    'limSupY': -1.58
-}
-
-on_stop_region = False
 
 class WallFollowerNode(Node):
     def __init__(self):
@@ -108,11 +105,34 @@ class WallFollowerNode(Node):
         # cause this is the region that the robot will use to follow the wall
         return (regions['front'] <= self.wall_distance - self.error_distance) or (regions['fright'] <= self.wall_distance - self.error_distance) or (regions['right'] <= self.wall_distance - self.error_distance)
     
+    def should_stop(self):
+        global regions
+        global over_distance
+
+        # loop all the regions and count how many are not over distance and save which one they are
+        count = 0
+        not_over_distance = []
+        for region in regions.keys():
+            if regions[region] < over_distance:
+                count += 1
+                not_over_distance.append(region)
+        # if only one region is not over distance and it is one of these: fright, right, bright, bbright
+        # it means that the robot is next to "plane" wall and it should stop
+        if count == 1 and (not_over_distance[0] in ['fright', 'right', 'bright', 'bbright']):
+            return True
+        # elif only two regions are not over distance and they are one of these: (fright and right) xor (right and bright) xor (bright and bbright)
+        elif count == 2 and ((not_over_distance[0] in ['fright', 'right'] and not_over_distance[1] in ['fright', 'right']) or (not_over_distance[0] in ['right', 'bright'] and not_over_distance[1] in ['right', 'bright']) or (not_over_distance[0] in ['bright', 'bbright'] and not_over_distance[1] in ['bright', 'bbright'])):
+            # If the value of the two regions are at least almost the same
+            # it means that the robot is next to "plane" wall and it should stop
+            if abs(regions[not_over_distance[0]] - regions[not_over_distance[1]]) < self.error_distance:
+                return True
+        return False
+    
     def take_action(self):
         global regions
         global over_distance
 
-         # If the robot is too close to the wall
+        # If the robot is too close to the wall
         if self.is_too_close_to_the_wall():
             # If left side is closer to the wall than the right side
             if (regions['fleft'] <= regions['fright']) or (regions['left'] <= regions['right']):
@@ -149,7 +169,6 @@ class WallFollowerNode(Node):
     def scan_callback(self, msg: LaserScan):
         global regions
         global over_distance
-        global on_stop_region
         
         regions = {
             'right':  min(min(msg.ranges[0:35]), over_distance),
@@ -157,46 +176,28 @@ class WallFollowerNode(Node):
             'front':  min(min(msg.ranges[72:107]), over_distance),
             'fleft':  min(min(msg.ranges[108:143]), over_distance),
             'left':   min(min(msg.ranges[144:179]), over_distance),
+            'bleft':  min(min(msg.ranges[180:215]), over_distance),
+            'bbleft': min(min(msg.ranges[216:251]), over_distance),
+            'back':   min(min(msg.ranges[252:287]), over_distance),
+            'bbright': min(min(msg.ranges[288:323]), over_distance),
+            'bright': min(min(msg.ranges[324:359]), over_distance),
         }
-    
-        # If robot is on stop region, stop/park it, otherwise take action (keep moving)
-        twist_msg = self.stop() if on_stop_region else self.take_action()
+
+        # If robot is on stop region (should stop), stop/park it, otherwise take action (keep moving)
+        twist_msg = self.stop() if self.should_stop() else self.take_action()
         self.pub.publish(twist_msg)
 
-    def timer_callback(self):
-        return
-
-    def odom_callback(self, msg: Odometry):
-        global stop_region
-        global on_stop_region
-        # Extract the position (x, y, z) from the Odometry message
-        x = msg.pose.pose.position.x
-        y = msg.pose.pose.position.y
-        on_stop_region = x >=stop_region['limInfX'] and x <=stop_region['limSupX'] and y >=stop_region['limInfY'] and y <=stop_region['limSupY']
-
-        # print('Robot position: x={}, y={}'.format(x, y))
 
 def main(args=None):
     rclpy.init(args=args)
     
-    # Set the loop rate to achieve a desired frequency (e.g., 20 Hz)
-    loop_rate = 40  # Adjust the rate as needed
-    timer_period = 1.0 / loop_rate  # Time in seconds between iterations
-
     wall_follower_node = WallFollowerNode()
-    timer = wall_follower_node.create_timer(timer_period, wall_follower_node.timer_callback)
-
-    robot_position_listener = rclpy.create_node('robot_position_listener')
-    # Subscribe to the Odometry topic to get the robot's pose
-    robot_position_listener.create_subscription(Odometry, '/odom', wall_follower_node.odom_callback, 10)
 
     while rclpy.ok():
         rclpy.spin_once(wall_follower_node)
-        rclpy.spin_once(robot_position_listener)
 
     wall_follower_node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
