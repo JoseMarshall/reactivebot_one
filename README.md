@@ -33,7 +33,7 @@ This project use the version 2 of ROS (Robot Operating System) and the Gazebo si
 Beside ROS 2, We will need some other packages:
 
 ```bash
-    $ sudo apt install ros-foxy-joint-state-publisher ros-foxy-joint-state-publisher-gui row-foxy-xacro gazebo_ros twis_mux
+    $ sudo apt install ros-foxy-gazebo-ros-pkgs ros-foxy-joint-state-publisher ros-foxy-joint-state-publisher-gui row-foxy-xacro gazebo_ros twis_mux
 ```
 
 Create a workspace and clone the project:

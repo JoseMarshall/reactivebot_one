@@ -2,16 +2,24 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
+from nav_msgs.msg import Odometry
 
+# Sensor Regions
 regions = {
+    'bbright': 0,
+    'bright': 0,
     'right': 0,
     'fright': 0,
     'front': 0,
+    'back': 0,
     'fleft': 0,
     'left': 0,
+    'bleft': 0,    
+    'bbleft': 0,   
 }
 
 over_distance = 10
+
 class WallFollowerNode(Node):
     def __init__(self):
         super().__init__('wall_follower')
@@ -74,8 +82,14 @@ class WallFollowerNode(Node):
         twist_msg.linear.x = self.linear_speed
         print("go_straight_ahead")
         return twist_msg
-    
-  
+     
+    def stop(self):
+        twist_msg = Twist()
+        twist_msg.linear.x = 0.0
+        twist_msg.linear.y = 0.0
+        twist_msg.linear.z = 0.0
+        print("stop")
+        return twist_msg
 
     def is_too_far_from_the_wall(self):
         global regions
@@ -89,13 +103,45 @@ class WallFollowerNode(Node):
         # if all the regions are smaller than the desired distance from the wall
         # We consider only the front, front-right and right regions
         # cause this is the region that the robot will use to follow the wall
-        return (regions['front'] <= self.wall_distance - self.error_distance) and (regions['fright'] <= self.wall_distance - self.error_distance) and (regions['right'] <= self.wall_distance - self.error_distance)
+        return (regions['front'] <= self.wall_distance - self.error_distance) or (regions['fright'] <= self.wall_distance - self.error_distance) or (regions['right'] <= self.wall_distance - self.error_distance)
+    
+    def should_stop(self):
+        global regions
+        global over_distance
+
+        # loop all the regions and count how many are not over distance and save which one they are
+        count = 0
+        not_over_distance = []
+        for region in regions.keys():
+            if regions[region] < over_distance:
+                count += 1
+                not_over_distance.append(region)
+        # if only one region is not over distance and it is one of these: fright, right, bright, bbright
+        # it means that the robot is next to "plane" wall and it should stop
+        if count == 1 and (not_over_distance[0] in ['fright', 'right', 'bright', 'bbright']):
+            return True
+        # elif only two regions are not over distance and they are one of these: (fright and right) xor (right and bright) xor (bright and bbright)
+        elif count == 2 and ((not_over_distance[0] in ['fright', 'right'] and not_over_distance[1] in ['fright', 'right']) or (not_over_distance[0] in ['right', 'bright'] and not_over_distance[1] in ['right', 'bright']) or (not_over_distance[0] in ['bright', 'bbright'] and not_over_distance[1] in ['bright', 'bbright'])):
+            # If the value of the two regions are at least almost the same
+            # it means that the robot is next to "plane" wall and it should stop
+            if abs(regions[not_over_distance[0]] - regions[not_over_distance[1]]) < self.error_distance:
+                return True
+        return False
     
     def take_action(self):
         global regions
         global over_distance
+
+        # If the robot is too close to the wall
+        if self.is_too_close_to_the_wall():
+            # If left side is closer to the wall than the right side
+            if (regions['fleft'] <= regions['fright']) or (regions['left'] <= regions['right']):
+                return self.go_back_right()
+            else:
+                return self.go_back_straight()
+        
         #If the robot is pointed to the wall
-        if regions['front'] < over_distance and regions['right'] == over_distance and regions['left'] == over_distance:
+        elif (regions['front'] < over_distance or regions['fleft'] < over_distance or regions['fright'] < over_distance)and regions['right'] == over_distance and regions['left'] == over_distance:
             return self.go_straight_ahead()
 
         # If the robot is too far from the wall
@@ -105,15 +151,6 @@ class WallFollowerNode(Node):
                 return self.find_wall_on_left()
             else:
                 return self.find_wall_on_right()
-        
-        # If the robot is too close to the wall
-        elif self.is_too_close_to_the_wall():
-            # If left side is closer to the wall than the right side
-            if (regions['fleft'] <= regions['fright']) or (regions['left'] <= regions['right']):
-                return self.go_back_right()
-            else:
-                return self.go_back_straight()
-        
         
         # If the robot is at the desired distance from the wall
         else:
@@ -129,47 +166,38 @@ class WallFollowerNode(Node):
                 elif (regions['fright'] > self.wall_distance) or (regions['right'] > self.wall_distance):
                     return self.turn_right()
 
-    def scan_callback(self, msg):
+    def scan_callback(self, msg: LaserScan):
         global regions
         global over_distance
+        
         regions = {
             'right':  min(min(msg.ranges[0:35]), over_distance),
             'fright': min(min(msg.ranges[36:71]), over_distance),
             'front':  min(min(msg.ranges[72:107]), over_distance),
             'fleft':  min(min(msg.ranges[108:143]), over_distance),
             'left':   min(min(msg.ranges[144:179]), over_distance),
+            'bleft':  min(min(msg.ranges[180:215]), over_distance),
+            'bbleft': min(min(msg.ranges[216:251]), over_distance),
+            'back':   min(min(msg.ranges[252:287]), over_distance),
+            'bbright': min(min(msg.ranges[288:323]), over_distance),
+            'bright': min(min(msg.ranges[324:359]), over_distance),
         }
-    
-       
-        # print(regions)
 
-        # Adjust the robot's movement based on the distance to the wall
-        twist_msg = self.take_action()
+        # If robot is on stop region (should stop), stop/park it, otherwise take action (keep moving)
+        twist_msg = self.stop() if self.should_stop() else self.take_action()
         self.pub.publish(twist_msg)
-
-    def timer_callback(self):
-        return
 
 
 def main(args=None):
     rclpy.init(args=args)
     
-    # Set the loop rate to achieve a desired frequency (e.g., 20 Hz)
-    loop_rate = 40  # Adjust the rate as needed
-    timer_period = 1.0 / loop_rate  # Time in seconds between iterations
-
     wall_follower_node = WallFollowerNode()
-    timer = wall_follower_node.create_timer(timer_period, wall_follower_node.timer_callback)
 
     while rclpy.ok():
         rclpy.spin_once(wall_follower_node)
 
-    # rclpy.spin(wall_follower_node)
-
-    
     wall_follower_node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
