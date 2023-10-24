@@ -24,7 +24,32 @@ The goal of this project is to create a reactive robot that can navigate in a wo
          X -> End point
 ```
 ## Project Structure
+6 directories, 17 files
 
+```bash 
+├── CMakeLists.txt
+├── README.md
+├── config
+│   ├── gaz_ros2_ctl_use_sim.yaml
+│   ├── gazebo_params.yaml
+│   └── my_controllers.yaml
+├── description
+│   ├── gazebo_control.xacro
+│   ├── inertial_macros.xacro
+│   ├── lidar.xacro
+│   ├── robot.urdf.xacro
+│   ├── robot_core.xacro
+│   └── ros2_control.xacro
+├── launch
+│   ├── launch_sim.launch.py
+│   └── rsp.launch.py
+├── package.xml
+├── scripts
+│   └── follow_wall.py
+└── worlds
+    ├── empty.world
+    └── question_mark_wall.world
+```
 
 ## Installation and Build
 
