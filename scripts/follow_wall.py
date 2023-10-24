@@ -35,52 +35,52 @@ class WallFollowerNode(Node):
         twist_msg = Twist()
         twist_msg.linear.x = self.linear_speed
         twist_msg.angular.z = self.angular_speed
-        print("find_wall_on_left")
+        # print("find_wall_on_left")
         return twist_msg
 
     def find_wall_on_right(self):
         twist_msg = Twist()
         twist_msg.linear.x = self.linear_speed
         twist_msg.angular.z = -self.angular_speed
-        print("find_wall_on_right")
+        # print("find_wall_on_right")
         return twist_msg
     
     def go_back_left(self):
         twist_msg = Twist()
         twist_msg.linear.x = -self.linear_speed
         twist_msg.angular.z = -self.angular_speed
-        print("go_back_left")
+        # print("go_back_left")
         return twist_msg
 
     def go_back_right(self):
         twist_msg = Twist()
         twist_msg.linear.x = -self.linear_speed
         twist_msg.angular.z = self.angular_speed
-        print("go_back_right")
+        # print("go_back_right")
         return twist_msg
 
     def go_back_straight(self):
         twist_msg = Twist()
         twist_msg.linear.x = -self.linear_speed
-        print("go_back_straight")
+        # print("go_back_straight")
         return twist_msg
 
     def turn_left(self):
         twist_msg = Twist()
         twist_msg.angular.z = self.angular_speed
-        print("turn_left")
+        # print("turn_left")
         return twist_msg
 
     def turn_right(self):
         twist_msg = Twist()
         twist_msg.angular.z = -self.angular_speed
-        print("turn_right")
+        # print("turn_right")
         return twist_msg
 
     def go_straight_ahead(self):
         twist_msg = Twist()
         twist_msg.linear.x = self.linear_speed
-        print("go_straight_ahead")
+        # print("go_straight_ahead")
         return twist_msg
      
     def stop(self):
@@ -88,7 +88,7 @@ class WallFollowerNode(Node):
         twist_msg.linear.x = 0.0
         twist_msg.linear.y = 0.0
         twist_msg.linear.z = 0.0
-        print("stop")
+        # print("stop")
         return twist_msg
 
     def is_too_far_from_the_wall(self):
